@@ -81,7 +81,7 @@ def main():
     if args.use_pbe:
         info_file = open('current_TFT_PBE.json')
     data = json.load(info_file)
-    raw_champions_dict = data["setData"][2]["champions"]
+    raw_champions_dict = data["setData"][6]["champions"]
     champions_dict = {}
     for champion in raw_champions_dict:
         name = champion["name"].lower()
