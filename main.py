@@ -5,7 +5,9 @@ import json
 import requests
 import copy
 from damage_calc import target_dummy_DPS
-
+import shutil
+import cardGenerator
+import champRanker
 
 def parse_args():
     """ Perform command-line argument parsing. """
@@ -15,12 +17,37 @@ def parse_args():
     parser.add_argument(
         '--damage_calc',
         action='store_true',
-        help='Use for damage calculations (unimplemented)'
+        help='TBI'
     )
     parser.add_argument(
         '--reimport_files',
         action='store_true',
         help='Indicates whether information files are scraped'
+    )
+    parser.add_argument(
+        '--reimport_splash',
+        action='store_true',
+        help='Indicates whether champion splash files are scraped'
+    )
+    parser.add_argument(
+        '--hpRanking',
+        action='store_true',
+        help='Indicates whether to write hp rankings to a file'
+    )
+    parser.add_argument(
+        '--genCards',
+        action='store_true',
+        help='Indicates whether to write cards into a file'
+    )
+    parser.add_argument(
+        '--genTraits',
+        action='store_true',
+        help='Indicates whether to write trait cards into a file'
+    )
+    parser.add_argument(
+        '--genItems',
+        action='store_true',
+        help='Indicates whether to write item cards into a file'
     )
 
     return parser.parse_args()
@@ -29,6 +56,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    img_path = "c:/Users/chief/OneDrive/Documents/CS/pics"
     if args.reimport_files:
         url = 'https://raw.communitydragon.org/latest/cdragon/tft/en_us.json'
         r = requests.get(url, allow_redirects=True)
@@ -36,12 +64,34 @@ def main():
         print("Re-imported files!")
     info_file = open('current_TFT.json')
     data = json.load(info_file)
-    raw_champions_dict = data["setData"][3]["champions"]
+    raw_champions_dict = data["setData"][2]["champions"]
     champions_dict = {}
     for champion in raw_champions_dict:
-        champions_dict[champion["name"]] = champion
-    
-    print("Complete")
+        name = champion["name"].lower()
+        champions_dict[name] = champion
+        # Solely to import splashes
+        if args.reimport_splash:
+            url = 'https://raw.communitydragon.org/latest/game/assets/ux/tft/championsplashes/tft7_'+name+'_mobile.tft_set7.png'
+            response = requests.get(url, stream=True)
+            with open(name+'.png', 'wb') as out_file:
+                shutil.copyfileobj(response.raw, out_file)
+            del response
+        # Remove non-champions from dictionary
+    for item in ['the golden egg', 'jade statue']:
+        champions_dict.pop(item)
+    simpleChampDict = cardGenerator.simplifyChampDict(champions_dict)
+    if args.hpRanking:
+        champRanker.createHPRanking(simpleChampDict)
+    if args.genCards:
+        cardGenerator.generateExcelCards(simpleChampDict)
+    traits_list = data["setData"][2]["traits"]
+    if args.genTraits:
+        cardGenerator.generateTraitCards(traits_list)
+    itemsList = data["items"]
+    if args.genItems:
+        cardGenerator.generateItemCards(itemsList)
+    print("complete")
+
 
 
 if __name__ == '__main__':
