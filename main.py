@@ -25,6 +25,16 @@ def parse_args():
         help='Indicates whether information files are scraped'
     )
     parser.add_argument(
+        '--reimport_pbe',
+        action='store_true',
+        help='Indicates whether pbe files are scraped'
+    )
+    parser.add_argument(
+        '--use_pbe',
+        action='store_true',
+        help='Indicates whether to use pbe or main files for analysis'
+    )
+    parser.add_argument(
         '--reimport_splash',
         action='store_true',
         help='Indicates whether champion splash files are scraped'
@@ -62,7 +72,14 @@ def main():
         r = requests.get(url, allow_redirects=True)
         open('current_TFT.json','wb').write(r.content)
         print("Re-imported files!")
+    if args.reimport_pbe:
+        url = 'https://raw.communitydragon.org/pbe/cdragon/tft/en_us.json'
+        r = requests.get(url, allow_redirects=True)
+        open('current_TFT_PBE.json','wb').write(r.content)
+        print("Re-imported PBE files!")
     info_file = open('current_TFT.json')
+    if args.use_pbe:
+        info_file = open('current_TFT_PBE.json')
     data = json.load(info_file)
     raw_champions_dict = data["setData"][2]["champions"]
     champions_dict = {}
@@ -77,8 +94,6 @@ def main():
                 shutil.copyfileobj(response.raw, out_file)
             del response
         # Remove non-champions from dictionary
-    for item in ['the golden egg', 'jade statue']:
-        champions_dict.pop(item)
     simpleChampDict = cardGenerator.simplifyChampDict(champions_dict)
     if args.hpRanking:
         champRanker.createHPRanking(simpleChampDict)
